@@ -79,6 +79,7 @@ purchase_upgrade() {
 }
 
 # Function to get the best upgrade item
+# Function to get the best upgrade item
 get_best_item() {
     curl -s -X POST -H "User-Agent: Mozilla/5.0 (Android 12; Mobile; rv:102.0) Gecko/102.0 Firefox/102.0" \
         -H "Accept: */*" \
@@ -91,7 +92,7 @@ get_best_item() {
         -H "Sec-Fetch-Mode: cors" \
         -H "Sec-Fetch-Site: same-site" \
         -H "Priority: u=4" \
-        https://api.hamsterkombat.io/clicker/upgrades-for-buy | jq -r '.upgradesForBuy | map(select(.isExpired == false and .isAvailable)) | map(select(.profitPerHourDelta != 0 and .price != 0)) | sort_by(-(.profitPerHourDelta / .price))[:1] | .[0] | {id: .id, section: .section, price: .price, profitPerHourDelta: .profitPerHourDelta, cooldownSeconds: .cooldownSeconds}'
+        https://api.hamsterkombat.io/clicker/upgrades-for-buy | jq -r '.upgradesForBuy | map(select(.isExpired == false and .isAvailable)) | map(select(.profitPerHourDelta != 0 and .price != 0 and .cooldownSeconds <= 600)) | sort_by(-(.profitPerHourDelta / .price))[:1] | .[0] | {id: .id, section: .section, price: .price, profitPerHourDelta: .profitPerHourDelta, cooldownSeconds: .cooldownSeconds}'
 }
 
 # Function to wait for cooldown period
@@ -106,6 +107,13 @@ main() {
     while true; do
         # Get the best item to buy
         best_item=$(get_best_item)
+        
+        if [ -z "$best_item" ]; then
+            echo -e "${yellow}No suitable upgrade found. Waiting for 60 seconds before trying again...${rest}"
+            sleep 60
+            continue
+        }
+
         best_item_id=$(echo "$best_item" | jq -r '.id')
         section=$(echo "$best_item" | jq -r '.section')
         price=$(echo "$best_item" | jq -r '.price')
@@ -116,6 +124,7 @@ main() {
         echo -e "${green}Best item to buy:${yellow} $best_item_id ${green}in section:${yellow} $section${rest}"
         echo -e "${blue}Price: ${cyan}$price${rest}"
         echo -e "${blue}Profit per Hour: ${cyan}$profit${rest}"
+        echo -e "${blue}Cooldown: ${cyan}$cooldown ${blue}seconds${rest}"
         echo ""
 
         # Get current balanceCoins
@@ -127,29 +136,23 @@ main() {
 
         # Check if current balance is above the threshold after purchase
         if (( $(echo "$current_balance - $price > $min_balance_threshold" | bc -l) )); then
-            # Attempt to purchase the best upgrade item
-            if [ -n "$best_item_id" ]; then
-                echo -e "${green}Attempting to purchase upgrade '${yellow}$best_item_id${green}'...${rest}"
-                echo ""
+            echo -e "${green}Attempting to purchase upgrade '${yellow}$best_item_id${green}'...${rest}"
+            echo ""
 
-                purchase_status=$(purchase_upgrade "$best_item_id")
+            purchase_status=$(purchase_upgrade "$best_item_id")
 
-                if echo "$purchase_status" | grep -q "error_code"; then
-                    wait_for_cooldown "$cooldown"
-                else
-                    echo -e "${green}Upgrade ${yellow}'$best_item_id'${green} purchased successfully.${rest}"
-                    sleep_duration=$((RANDOM % 8 + 5))
-                    echo -e "${green}Waiting for ${yellow}$sleep_duration${green} seconds before next purchase...${rest}"
-                    sleep "$sleep_duration"
-                fi
+            if echo "$purchase_status" | grep -q "error_code"; then
+                wait_for_cooldown "$cooldown"
             else
-                echo -e "${red}No valid item found to buy.${rest}"
-                break
+                echo -e "${green}Upgrade ${yellow}'$best_item_id'${green} purchased successfully.${rest}"
+                sleep_duration=$((RANDOM % 8 + 5))
+                echo -e "${green}Waiting for ${yellow}$sleep_duration${green} seconds before next purchase...${rest}"
+                sleep "$sleep_duration"
             fi
         else
-            echo -e "${red}Current balance ${cyan}(${current_balance}) ${red}minus price of item ${cyan}(${price}) ${red}is below the threshold ${cyan}(${min_balance_threshold})${red}. Stopping purchases.${rest}"
-            break
-        fi
+            echo -e "${red}Current balance ${cyan}(${current_balance}) ${red}minus price of item ${cyan}(${price}) ${red}is below the threshold ${cyan}(${min_balance_threshold})${red}. Waiting for 60 seconds before trying again...${rest}"
+            sleep 60
+        }
     done
 }
 
