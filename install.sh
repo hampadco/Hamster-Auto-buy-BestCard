@@ -104,6 +104,7 @@ wait_for_cooldown() {
 
 # Main script logic
 # Main script logic
+# Main script logic
 main() {
     while true; do
         # Get the best item to buy
