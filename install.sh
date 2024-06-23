@@ -103,6 +103,7 @@ wait_for_cooldown() {
 }
 
 # Main script logic
+# Main script logic
 main() {
     while true; do
         # Get the best item to buy
@@ -112,7 +113,7 @@ main() {
             echo -e "${yellow}No suitable upgrade found. Waiting for 60 seconds before trying again...${rest}"
             sleep 60
             continue
-        }
+        fi
 
         best_item_id=$(echo "$best_item" | jq -r '.id')
         section=$(echo "$best_item" | jq -r '.section')
@@ -152,7 +153,7 @@ main() {
         else
             echo -e "${red}Current balance ${cyan}(${current_balance}) ${red}minus price of item ${cyan}(${price}) ${red}is below the threshold ${cyan}(${min_balance_threshold})${red}. Waiting for 60 seconds before trying again...${rest}"
             sleep 60
-        }
+        fi
     done
 }
 
