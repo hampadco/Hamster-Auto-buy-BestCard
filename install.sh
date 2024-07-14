@@ -71,10 +71,10 @@ purchase_upgrade() {
     response=$(curl -s -X POST \
       -H "Content-Type: application/json" \
       -H "Authorization: $Authorization" \
-      -H "Origin: https://hamsterkombat.io" \
-      -H "Referer: https://hamsterkombat.io/" \
+      -H "Origin: https://hamsterkombatgame.io" \
+      -H "Referer: https://hamsterkombatgame.io/" \
       -d "{\"upgradeId\": \"$upgrade_id\", \"timestamp\": $timestamp}" \
-      https://api.hamsterkombat.io/clicker/buy-upgrade)
+      https://api.hamsterkombatgame.io/clicker/buy-upgrade)
     echo "$response"
 }
 
@@ -84,15 +84,15 @@ get_best_item() {
     curl -s -X POST -H "User-Agent: Mozilla/5.0 (Android 12; Mobile; rv:102.0) Gecko/102.0 Firefox/102.0" \
         -H "Accept: */*" \
         -H "Accept-Language: en-US,en;q=0.5" \
-        -H "Referer: https://hamsterkombat.io/" \
+        -H "Referer: https://hamsterkombatgame.io/" \
         -H "Authorization: $Authorization" \
-        -H "Origin: https://hamsterkombat.io" \
+        -H "Origin: https://hamsterkombatgame.io" \
         -H "Connection: keep-alive" \
         -H "Sec-Fetch-Dest: empty" \
         -H "Sec-Fetch-Mode: cors" \
         -H "Sec-Fetch-Site: same-site" \
         -H "Priority: u=4" \
-        https://api.hamsterkombat.io/clicker/upgrades-for-buy | jq -r '.upgradesForBuy | map(select(.isExpired == false and .isAvailable)) | map(select(.profitPerHourDelta != 0 and .price != 0 and .cooldownSeconds <= 600)) | sort_by(-(.profitPerHourDelta / .price))[:1] | .[0] | {id: .id, section: .section, price: .price, profitPerHourDelta: .profitPerHourDelta, cooldownSeconds: .cooldownSeconds}'
+        https://api.hamsterkombatgame.io/clicker/upgrades-for-buy | jq -r '.upgradesForBuy | map(select(.isExpired == false and .isAvailable)) | map(select(.profitPerHourDelta != 0 and .price != 0 and .cooldownSeconds <= 600)) | sort_by(-(.profitPerHourDelta / .price))[:1] | .[0] | {id: .id, section: .section, price: .price, profitPerHourDelta: .profitPerHourDelta, cooldownSeconds: .cooldownSeconds}'
 }
 
 # Function to wait for cooldown period
@@ -132,9 +132,9 @@ main() {
         # Get current balanceCoins
         current_balance=$(curl -s -X POST \
             -H "Authorization: $Authorization" \
-            -H "Origin: https://hamsterkombat.io" \
-            -H "Referer: https://hamsterkombat.io/" \
-            https://api.hamsterkombat.io/clicker/sync | jq -r '.clickerUser.balanceCoins')
+            -H "Origin: https://hamsterkombatgame.io" \
+            -H "Referer: https://hamsterkombatgame.io/" \
+            https://api.hamsterkombatgame.io/clicker/sync | jq -r '.clickerUser.balanceCoins')
 
         # Check if current balance is above the threshold after purchase
         if (( $(echo "$current_balance - $price > $min_balance_threshold" | bc -l) )); then
